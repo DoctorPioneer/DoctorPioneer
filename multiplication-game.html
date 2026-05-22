@@ -244,6 +244,19 @@
         .feedback.correct { color: #43a047; }
         .feedback.wrong   { color: #e53935; }
 
+        .tip-line {
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: normal;
+            color: #5c35a0;
+            background: #f3e5f5;
+            border-radius: 8px;
+            padding: 0.4rem 0.7rem;
+            margin-top: 0.4rem;
+            min-height: 1.2rem;
+        }
+        .tip-line.hidden { display: none; }
+
         /* ── RESULTS SCREEN ── */
         #results-screen { display: none; text-align: center; }
 
@@ -263,6 +276,32 @@
         }
         .result-item .rv { font-size: 1.6rem; font-weight: bold; color: #009688; }
         .result-item .rl { font-size: 0.78rem; color: #555; }
+
+        .review-section {
+            margin-bottom: 1.2rem;
+        }
+        .review-section h3 {
+            color: #5c35a0;
+            font-size: 0.95rem;
+            margin-bottom: 0.6rem;
+            text-align: left;
+        }
+        .review-list {
+            max-height: 180px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+        .review-item {
+            background: #f3e5f5;
+            border-radius: 8px;
+            padding: 0.45rem 0.7rem;
+            text-align: left;
+            font-size: 0.82rem;
+        }
+        .review-item .ri-fact { font-weight: bold; color: #5c35a0; margin-bottom: 0.1rem; }
+        .review-item .ri-tip  { color: #555; }
 
         .btn-again {
             width: 100%;
@@ -393,6 +432,7 @@
         </div>
 
         <div class="feedback" id="feedback"></div>
+        <div class="tip-line hidden" id="tip-line"></div>
     </div>
 
     <!-- ── RESULTS SCREEN ── -->
@@ -404,6 +444,10 @@
             <div class="result-item"><div class="rv" id="r-pct">0%</div><div class="rl">Accuracy</div></div>
             <div class="result-item"><div class="rv" id="r-streak">0</div><div class="rl">Best streak</div></div>
             <div class="result-item"><div class="rv" id="r-avg">0s</div><div class="rl">Avg. time</div></div>
+        </div>
+        <div class="review-section" id="review-section" style="display:none">
+            <h3>💡 Facts to remember</h3>
+            <div class="review-list" id="review-list"></div>
         </div>
         <button class="btn-again" id="btn-again">Play again</button>
         <button class="btn-menu" id="btn-menu">Change settings</button>
@@ -417,6 +461,55 @@
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const CIRCUMFERENCE = 2 * Math.PI * 22; // 138.2
 
+const TIPS = {
+    '2x2':'Double 2 — same as 2+2','2x3':'Count by 2s: 2,4,6','2x4':'Double 4 = 8',
+    '2x5':'Half of 10','2x6':'Double 6 = 12','2x7':'Double 7 = 14',
+    '2x8':'Double 8 = 16','2x9':'Double 9 = 18','2x10':'Add a zero',
+    '2x11':'11+11 = 22','2x12':'12+12 = 24',
+    '3x3':'3×3=9 — three threes','3x4':'3×4=12 — three fours, a dozen',
+    '3x5':'Count by 3s: 3,6,9,12,15','3x6':'3×6=18 — half of 36',
+    '3x7':'Remember: 3, 7, 21','3x8':'3×8=24 — three eights, two dozen',
+    '3x9':'3×9=27 — digits always add to 9 (2+7=9)','3x10':'Add a zero: 30',
+    '3x11':'3×11=33 — repeat the digit','3x12':'3×10=30, plus 3×2=6 → 36',
+    '4x4':'4×4=16 — four squared','4x5':'4×5=20 — half of 40',
+    '4x6':'4×6=24 — two dozen','4x7':'4×7=28 — double 14',
+    '4x8':'Double twice: 4→8→16→32','4x9':'One less than 4×10=40 → 36',
+    '4x10':'Add a zero: 40','4x11':'4×11=44 — repeat the digit',
+    '4x12':'4×10=40, plus 4×2=8 → 48',
+    '5x5':'5×5=25 — five squared','5x6':'5×6=30 — half of 60',
+    '5x7':'5×7=35 — ends in 5','5x8':'5×8=40 — half of 80',
+    '5x9':'One less than 5×10=50 → 45','5x10':'Add a zero: 50',
+    '5x11':'5×11=55 — repeat the digit','5x12':'5×12=60 — like a clock',
+    '6x6':'6×6=36 — six sixes, three dozen',
+    '6x7':'6×7=42 — the answer to life, the universe, and everything!',
+    '6x8':'6×8=48 — "six ate forty-eight"',
+    '6x9':'Remember 5,4 → six nines = 54','6x10':'Add a zero: 60',
+    '6x11':'6×11=66 — repeat the digit','6x12':'6×10=60, plus 6×2=12 → 72',
+    '7x7':'7×7=49 — seven squared',
+    '7x8':'5,6,7,8 — fifty-six = seven × eight',
+    '7x9':'7×9=63 — digits add to 9 (6+3=9)','7x10':'Add a zero: 70',
+    '7x11':'7×11=77 — repeat the digit','7x12':'7×10=70, plus 7×2=14 → 84',
+    '8x8':'I ate and ate till sick on the floor — 8×8=64',
+    '8x9':'8×9=72 — digits add to 9 (7+2=9)','8x10':'Add a zero: 80',
+    '8x11':'8×11=88 — repeat the digit','8x12':'8×10=80, plus 8×2=16 → 96',
+    '9x9':'9×9=81 — nine squared','9x10':'Add a zero: 90',
+    '9x11':'9×11=99 — repeat the digit','9x12':'9×10=90, plus 9×2=18 → 108',
+    '10x10':'Two zeros: 100','10x11':'10×11=110','10x12':'10×12=120',
+    '11x11':'11×11=121 — pattern: 1,2,1','11x12':'11×12=132 — pattern: 1,3,2',
+    '12x12':'12×12=144 — a gross (dozen dozens)',
+};
+
+function getTip(a, b) {
+    const key = Math.min(a,b) + 'x' + Math.max(a,b);
+    if (TIPS[key]) return '💡 ' + TIPS[key];
+    if (a === 9 || b === 9) return '💡 ×9 trick: digits of the answer always add up to 9';
+    if (a === 11 || b === 11) return '💡 ×11 (1–9): just repeat the digit — e.g. 11×4=44';
+    if (a === 10 || b === 10) return '💡 ×10: just add a zero';
+    if (a === 5  || b === 5)  return '💡 ×5: answer always ends in 0 or 5';
+    if (a === 2  || b === 2)  return '💡 ×2: just double the other number';
+    return '💡 Try: ' + Math.min(a,b) + '×' + Math.max(a,b) + '=' + (a*b);
+}
+
 const DIFFICULTY = {
     easy:   { maxB: 10, timeLimit: 20, pointsBase: 10 },
     medium: { maxB: 12, timeLimit: 12, pointsBase: 15 },
@@ -426,6 +519,7 @@ const DIFFICULTY = {
 // ── STATE ───────────────────────────────────────────────────────────────────
 let settings = { tables: new Set([2,3,4,5,6,7,8,9,10]), difficulty: 'easy', mode: 'type', count: 10 };
 let game = {};
+const tipEl = () => document.getElementById('tip-line');
 
 // ── ELEMENTS ─────────────────────────────────────────────────────────────────
 const setupScreen   = document.getElementById('setup-screen');
@@ -507,6 +601,7 @@ function startGame() {
         timerInterval: null,
         timeLeft: 0,
         answered: false,
+        missed: new Map(),
     };
     showScreen('game');
     nextQuestion();
@@ -528,6 +623,7 @@ function nextQuestion() {
     game.answered = false;
     feedbackEl.textContent = '';
     feedbackEl.className = 'feedback';
+    const tl = tipEl(); tl.textContent = ''; tl.classList.add('hidden');
 
     const q = game.questions[game.idx];
     questionEl.textContent = `${q.a} × ${q.b} = ?`;
@@ -642,7 +738,12 @@ function handleWrong(val, correct) {
     game.streak = 0;
     feedbackEl.textContent = `Wrong — answer was ${correct}`;
     feedbackEl.className = 'feedback wrong';
-    requeue(game.questions[game.idx]);
+    const q = game.questions[game.idx];
+    const tip = getTip(q.a, q.b);
+    const tl = tipEl(); tl.textContent = tip; tl.classList.remove('hidden');
+    const key = Math.min(q.a,q.b) + 'x' + Math.max(q.a,q.b);
+    if (!game.missed.has(key)) game.missed.set(key, { a: q.a, b: q.b, answer: q.answer, tip });
+    requeue(q);
     game.idx++;
 }
 
@@ -670,12 +771,17 @@ function startTimer() {
                 game.streak = 0;
                 feedbackEl.textContent = `Time's up! Answer: ${correct}`;
                 feedbackEl.className = 'feedback wrong';
+                const qNow = game.questions[game.idx];
+                const tip = getTip(qNow.a, qNow.b);
+                const tl = tipEl(); tl.textContent = tip; tl.classList.remove('hidden');
+                const key = Math.min(qNow.a,qNow.b) + 'x' + Math.max(qNow.a,qNow.b);
+                if (!game.missed.has(key)) game.missed.set(key, { a: qNow.a, b: qNow.b, answer: qNow.answer, tip });
                 answerInput.disabled = true;
                 choicesWrap.querySelectorAll('.choice-btn').forEach(b => {
                     b.disabled = true;
                     if (+b.textContent === correct) b.classList.add('correct');
                 });
-                requeue(game.questions[game.idx]);
+                requeue(qNow);
                 game.idx++;
                 setTimeout(nextQuestion, 1000);
             }
@@ -723,6 +829,21 @@ function endGame() {
     const title  = pct === 100 ? 'Perfect score!' : pct >= 80 ? 'Great job!' : pct >= 60 ? 'Good effort!' : 'Keep practising!';
     document.getElementById('trophy').textContent = trophy;
     document.getElementById('results-title').textContent = title;
+
+    const reviewSection = document.getElementById('review-section');
+    const reviewList    = document.getElementById('review-list');
+    reviewList.innerHTML = '';
+    if (game.missed.size > 0) {
+        game.missed.forEach(({ a, b, answer, tip }) => {
+            const div = document.createElement('div');
+            div.className = 'review-item';
+            div.innerHTML = `<div class="ri-fact">${a} × ${b} = ${answer}</div><div class="ri-tip">${tip}</div>`;
+            reviewList.appendChild(div);
+        });
+        reviewSection.style.display = 'block';
+    } else {
+        reviewSection.style.display = 'none';
+    }
 
     showScreen('results');
 }
