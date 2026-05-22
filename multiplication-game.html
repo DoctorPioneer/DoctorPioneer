@@ -159,6 +159,18 @@
             margin-bottom: 0.3rem;
         }
 
+        .retry-badge {
+            display: inline-block;
+            background: #7b1fa2;
+            color: #fff;
+            border-radius: 20px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 0.3rem;
+        }
+        .retry-badge.hidden { display: none; }
+
         .streak-badge {
             display: inline-block;
             background: #ff7043;
@@ -365,6 +377,7 @@
         </div>
 
         <div class="question-area">
+            <span class="retry-badge hidden" id="retry-badge">↩ Retry</span>
             <div class="question" id="question-text">? × ? = ?</div>
             <span class="streak-badge hidden" id="streak-badge">🔥 Streak x0</span>
         </div>
@@ -522,10 +535,18 @@ function nextQuestion() {
     qnumVal.textContent = `${game.idx + 1}/${game.questions.length}`;
     progressBar.style.width = `${(game.idx / game.questions.length) * 100}%`;
 
+    const retryBadge = document.getElementById('retry-badge');
+    if (q.retries) {
+        retryBadge.textContent = `↩ Retry ${q.retries}/2`;
+        retryBadge.classList.remove('hidden');
+    } else {
+        retryBadge.classList.add('hidden');
+    }
+
     updateStreakBadge();
 
     if (settings.mode === 'type') {
-        typeMode.style.display = '';
+        typeMode.style.display = 'block';
         choiceMode.style.display = 'none';
         answerInput.value = '';
         answerInput.className = 'answer-input';
@@ -533,7 +554,7 @@ function nextQuestion() {
         answerInput.focus();
     } else {
         typeMode.style.display = 'none';
-        choiceMode.style.display = '';
+        choiceMode.style.display = 'block';
         buildChoices(q);
     }
 
@@ -621,7 +642,16 @@ function handleWrong(val, correct) {
     game.streak = 0;
     feedbackEl.textContent = `Wrong — answer was ${correct}`;
     feedbackEl.className = 'feedback wrong';
+    requeue(game.questions[game.idx]);
     game.idx++;
+}
+
+function requeue(q) {
+    q.retries = (q.retries || 0) + 1;
+    if (q.retries <= 2) {
+        const insertAt = Math.min(game.idx + 3, game.questions.length);
+        game.questions.splice(insertAt, 0, { ...q });
+    }
 }
 
 // ── TIMER ────────────────────────────────────────────────────────────────────
@@ -645,6 +675,7 @@ function startTimer() {
                     b.disabled = true;
                     if (+b.textContent === correct) b.classList.add('correct');
                 });
+                requeue(game.questions[game.idx]);
                 game.idx++;
                 setTimeout(nextQuestion, 1000);
             }
