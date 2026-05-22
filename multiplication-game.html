@@ -340,7 +340,7 @@
     </div>
 
     <!-- ── GAME SCREEN ── -->
-    <div id="game-screen">
+    <div id="game-screen" style="display:none">
         <div class="stats-bar">
             <div class="stat-box">
                 <div class="val" id="score-val">0</div>
@@ -383,7 +383,7 @@
     </div>
 
     <!-- ── RESULTS SCREEN ── -->
-    <div id="results-screen">
+    <div id="results-screen" style="display:none">
         <div class="trophy" id="trophy">🏆</div>
         <h2 id="results-title">Round complete!</h2>
         <div class="result-grid">
@@ -698,9 +698,9 @@ function endGame() {
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
 function showScreen(name) {
-    setupScreen.style.display  = name === 'setup'   ? '' : 'none';
-    gameScreen.style.display   = name === 'game'    ? '' : 'none';
-    resultsScreen.style.display= name === 'results' ? '' : 'none';
+    setupScreen.style.display   = name === 'setup'   ? 'block' : 'none';
+    gameScreen.style.display    = name === 'game'    ? 'block' : 'none';
+    resultsScreen.style.display = name === 'results' ? 'block' : 'none';
 }
 
 function showSetup() { showScreen('setup'); }
@@ -713,7 +713,7 @@ function shuffle(arr) {
     return arr;
 }
 
-showScreen('setup');
+setupScreen.style.display = 'block';
 </script>
 </body>
 </html>
